@@ -73,6 +73,10 @@ export const PROVIDER_NODE_TYPE_MAP: Record<ChatHubLLMProvider, INodeTypeNameVer
 		name: '@n8n/n8n-nodes-langchain.lmChatMistralCloud',
 		version: 1,
 	},
+	siliconFlow: {
+		name: '@n8n/n8n-nodes-langchain.lmChatSiliconFlow',
+		version: 1,
+	},
 };
 
 export const NODE_NAMES = {
@@ -270,290 +274,47 @@ const MODEL_METADATA_REGISTRY: Partial<
 		},
 	},
 	mistralCloud: {
-		// Most Mistral models support text and image
-		'mistral-tiny-2312': {
-			inputModalities: ['text'],
-		},
-		'mistral-tiny-2407': {
-			inputModalities: ['text'],
-		},
-		'mistral-tiny-latest': {
-			inputModalities: ['text'],
-		},
-		'mistral-tiny': {
-			inputModalities: ['text'],
-		},
-		'mistral-small-2312': {
-			inputModalities: ['text'],
-		},
-		'mistral-small-2409': {
-			inputModalities: ['text'],
-		},
-		'mistral-small-2501': {
-			inputModalities: ['text'],
-		},
-		'mistral-small-2503': {
-			inputModalities: ['text'],
-		},
-		'mistral-small-2506': {
-			inputModalities: ['text'],
-		},
 		'mistral-small-latest': {
 			inputModalities: ['text'],
 		},
-		'open-mistral-7b': {
+		'mistral-large-latest': {
 			inputModalities: ['text'],
 		},
-		'open-mistral-nemo': {
+		'mistral-nemo-latest': {
 			inputModalities: ['text'],
-		},
-		'open-mistral-nemo-2407': {
-			inputModalities: ['text'],
-		},
-		'open-mixtral-8x7b': {
-			inputModalities: ['text'],
-		},
-		'open-mixtral-8x22b': {
-			inputModalities: ['text'],
-		},
-		'open-mixtral-8x22b-2404': {
-			inputModalities: ['text'],
-		},
-		'ministral-3b-2410': {
-			inputModalities: ['text'],
-		},
-		'ministral-3b-latest': {
-			inputModalities: ['text'],
-		},
-		'ministral-8b-2410': {
-			inputModalities: ['text'],
-		},
-		'ministral-8b-latest': {
-			inputModalities: ['text'],
-		},
-		'mistral-moderation-2411': {
-			available: false,
-		},
-		'mistral-moderation-latest': {
-			available: false,
-		},
-		'mistral-ocr-2503': {
-			available: false,
-		},
-		'mistral-ocr-2505': {
-			available: false,
-		},
-		'mistral-ocr-latest': {
-			available: false,
-		},
-		'voxtral-mini-transcribe-2507': {
-			available: false,
 		},
 	},
-	// Reference: https://ai.google.dev/gemini-api/docs/models
-	google: {
-		// Gemini 3 series - latest models with advanced multimodal understanding
-		'models/gemini-3-pro-image-preview': {
-			inputModalities: ['text', 'image'],
-			capabilities: { functionCalling: false },
-		},
-		// Gemini 2.5 Pro series
-		'models/gemini-2.5-pro-preview-tts': {
+	siliconFlow: {
+		// Common SiliconFlow models
+		'Qwen/Qwen2.5-72B-Instruct': {
 			inputModalities: ['text'],
-			capabilities: { functionCalling: false },
 		},
-		// Gemini 2.5 Flash series
-		'models/gemini-2.5-flash': {
-			inputModalities: ['text', 'image', 'video', 'audio'],
-		},
-		'models/gemini-2.5-flash-preview-04-17': {
-			inputModalities: ['text', 'image', 'video', 'audio'],
-		},
-		'models/gemini-2.5-flash-preview-05-20': {
-			inputModalities: ['text', 'image', 'video', 'audio'],
-		},
-		'models/gemini-2.5-flash-preview-09-2025': {
-			inputModalities: ['text', 'image', 'video', 'audio'],
-		},
-		'models/gemini-2.5-flash-preview-tts': {
+		'Qwen/Qwen2.5-32B-Instruct': {
 			inputModalities: ['text'],
-			capabilities: { functionCalling: false },
 		},
-		'models/gemini-2.5-flash-image': {
-			inputModalities: ['text', 'image'],
-			capabilities: { functionCalling: false },
+		'Qwen/Qwen2.5-14B-Instruct': {
+			inputModalities: ['text'],
 		},
-		'models/gemini-2.5-flash-image-preview': {
-			inputModalities: ['text', 'image'],
-			capabilities: { functionCalling: false },
+		'Qwen/Qwen2.5-7B-Instruct': {
+			inputModalities: ['text'],
 		},
-		'models/gemini-2.5-flash-native-audio-preview-09-2025': {
-			inputModalities: ['text', 'audio', 'video'],
+		'Qwen/Qwen2.5-3B-Instruct': {
+			inputModalities: ['text'],
 		},
-		'models/gemini-live-2.5-flash-preview': {
-			inputModalities: ['text', 'audio', 'video'],
+		'ThuDua/ChatGLM3-6B': {
+			inputModalities: ['text'],
 		},
-		// Gemini 2.0 Flash series
-		'models/gemini-2.0-flash': {
-			inputModalities: ['text', 'image', 'video', 'audio'],
+		'meta-llama/Meta-Llama-3-70B-Instruct': {
+			inputModalities: ['text'],
 		},
-		'models/gemini-2.0-flash-001': {
-			inputModalities: ['text', 'image', 'video', 'audio'],
+		'meta-llama/Meta-Llama-3-8B-Instruct': {
+			inputModalities: ['text'],
 		},
-		'models/gemini-2.0-flash-exp': {
-			inputModalities: ['text', 'image', 'video', 'audio'],
+		'google/gemma-2-27b-it': {
+			inputModalities: ['text'],
 		},
-		'models/gemini-2.0-flash-live-001': {
-			inputModalities: ['text', 'audio', 'video'],
-		},
-		'models/gemini-2.0-flash-thinking-exp': {
-			inputModalities: ['text', 'image', 'video', 'audio'],
-		},
-		'models/gemini-2.0-flash-thinking-exp-01-21': {
-			inputModalities: ['text', 'image', 'video', 'audio'],
-		},
-		'models/gemini-2.0-flash-thinking-exp-1219': {
-			inputModalities: ['text', 'image', 'video', 'audio'],
-		},
-		// Gemini 2.0 Flash-Lite series
-		'models/gemini-2.0-flash-lite': {
-			inputModalities: ['text', 'image', 'video', 'audio'],
-		},
-		'models/gemini-2.0-flash-lite-001': {
-			inputModalities: ['text', 'image', 'video', 'audio'],
-		},
-		'models/gemini-2.0-flash-lite-preview': {
-			inputModalities: ['text', 'image', 'video', 'audio'],
-		},
-		'models/gemini-2.0-flash-lite-preview-02-05': {
-			inputModalities: ['text', 'image', 'video', 'audio'],
-		},
-	},
-	groq: {
-		'meta-llama/llama-prompt-guard-2-22m': {
-			available: false,
-		},
-		'meta-llama/llama-prompt-guard-2-86m': {
-			available: false,
-		},
-		'whisper-large-v3': {
-			available: false,
-		},
-		'whisper-large-v3-turbo': {
-			available: false,
-		},
-	},
-	vercelAiGateway: {
-		'alibaba/qwen3-embedding-0.6b': {
-			available: false,
-		},
-		'alibaba/qwen3-embedding-4b': {
-			available: false,
-		},
-		'alibaba/qwen3-embedding-8b': {
-			available: false,
-		},
-		'amazon/titan-embed-text-v2': {
-			available: false,
-		},
-		'cohere/embed-v4.0': {
-			available: false,
-		},
-		'google/gemini-embedding-001': {
-			available: false,
-		},
-		'google/text-embedding-005': {
-			available: false,
-		},
-		'google/text-multilingual-embedding-002': {
-			available: false,
-		},
-		'mistral/codestral-embed': {
-			available: false,
-		},
-		'mistral/mistral-embed': {
-			available: false,
-		},
-		'openai/text-embedding-3-large': {
-			available: false,
-		},
-		'openai/text-embedding-3-small': {
-			available: false,
-		},
-		'openai/text-embedding-ada-002': {
-			available: false,
-		},
-		'bfl/flux-kontext-max': {
-			available: false,
-		},
-		'bfl/flux-kontext-pro': {
-			available: false,
-		},
-		'bfl/flux-pro-1.0-fill': {
-			available: false,
-		},
-		'bfl/flux-pro-1.1': {
-			available: false,
-		},
-		'bfl/flux-pro-1.1-ultra': {
-			available: false,
-		},
-		'google/imagen-4.0-fast-generate-001': {
-			available: false,
-		},
-		'google/imagen-4.0-generate-001': {
-			available: false,
-		},
-		'google/imagen-4.0-ultra-generate-001': {
-			available: false,
-		},
-		// Instruct models - not suitable for chat
-		'openai/gpt-3.5-turbo-instruct': {
-			available: false,
-		},
-		// Deep research models - require specific tools
-		'openai/o3-deep-research': {
-			available: false,
-		},
-		// Model not found - may have been deprecated
-		'meituan/longcat-flash-thinking': {
-			available: false,
-		},
-		// Voyage models - language model method not implemented
-		'voyage/voyage-3-large': {
-			available: false,
-		},
-		'voyage/voyage-3.5': {
-			available: false,
-		},
-		'voyage/voyage-3.5-lite': {
-			available: false,
-		},
-		'voyage/voyage-code-2': {
-			available: false,
-		},
-		'voyage/voyage-code-3': {
-			available: false,
-		},
-		'voyage/voyage-finance-2': {
-			available: false,
-		},
-		'voyage/voyage-law-2': {
-			available: false,
-		},
-	},
-	openRouter: {
-		'openai/gpt-4o-audio-preview': {
-			available: false, // "Provider returned error"
-		},
-		'morph/morph-v3-fast': {
-			available: false, // Not supporting multi-turn conversations
-		},
-		'morph/morph-v3-large': {
-			available: false, // Not supporting multi-turn conversations
-		},
-		'relace/relace-apply-3': {
-			available: false, // Not supporting multi-turn conversations
+		'google/gemma-2-9b-it': {
+			inputModalities: ['text'],
 		},
 	},
 };

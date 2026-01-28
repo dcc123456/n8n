@@ -28,6 +28,7 @@ export const providerDisplayNames: Record<ChatHubProvider, string> = {
 	deepSeek: 'DeepSeek',
 	cohere: 'Cohere',
 	mistralCloud: 'Mistral Cloud',
+	siliconFlow: 'SiliconFlow',
 	n8n: 'Workflow agent',
 	'custom-agent': 'Personal agent',
 };
@@ -44,4 +45,5 @@ export const LLM_AGGREGATORS: ChatHubLLMProvider[] = [
 	'awsBedrock',
 	'vercelAiGateway',
 	'openRouter',
+	'siliconFlow',
 ];

@@ -204,6 +204,18 @@ export const maxContextWindowTokens: Record<ChatHubLLMProvider, Record<string, n
 		'mistral-small-2506': 128000,
 		'mistral-small-latest': 128000,
 	},
+	siliconFlow: {
+		'Qwen/Qwen2.5-72B-Instruct': 32000,
+		'Qwen/Qwen2.5-32B-Instruct': 32000,
+		'Qwen/Qwen2.5-14B-Instruct': 32000,
+		'Qwen/Qwen2.5-7B-Instruct': 32000,
+		'Qwen/Qwen2.5-3B-Instruct': 32000,
+		'ThuDua/ChatGLM3-6B': 32000,
+		'meta-llama/Meta-Llama-3-70B-Instruct': 8192,
+		'meta-llama/Meta-Llama-3-8B-Instruct': 8192,
+		'google/gemma-2-27b-it': 8192,
+		'google/gemma-2-9b-it': 8192,
+	},
 };
 
 const CONTEXT_WINDOW_SAFETY_FACTOR = 0.95;

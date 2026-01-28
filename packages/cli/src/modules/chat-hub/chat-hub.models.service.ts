@@ -158,6 +158,10 @@ export class ChatHubModelsService {
 				const rawModels = await this.fetchMistralCloudModels(credentials, additionalData);
 				return { models: this.transformAndFilterModels(rawModels, 'mistralCloud') };
 			}
+			case 'siliconFlow': {
+				const rawModels = await this.fetchSiliconFlowModels(credentials, additionalData);
+				return { models: this.transformAndFilterModels(rawModels, 'siliconFlow') };
+			}
 			case 'n8n':
 				return { models: await this.fetchAgentWorkflowsAsModels(user) };
 			case 'custom-agent':
@@ -411,6 +415,7 @@ export class ChatHubModelsService {
 	): Promise<INodePropertyOptions[]> {
 		return await this.nodeParametersService.getOptionsViaLoadOptions(
 			{
+				// From Mistral Cloud node
 				routing: {
 					request: {
 						method: 'GET',
@@ -425,16 +430,10 @@ export class ChatHubModelsService {
 								},
 							},
 							{
-								type: 'filter',
-								properties: {
-									pass: "={{ !$responseItem.id.includes('embed') }}",
-								},
-							},
-							{
 								type: 'setKeyValue',
 								properties: {
-									name: '={{ $responseItem.id }}',
-									value: '={{ $responseItem.id }}',
+									name: '={{$responseItem.id}}',
+									value: '={{$responseItem.id}}',
 								},
 							},
 							{
@@ -449,6 +448,50 @@ export class ChatHubModelsService {
 			},
 			additionalData,
 			PROVIDER_NODE_TYPE_MAP.mistralCloud,
+			{},
+			credentials,
+		);
+	}
+
+	private async fetchSiliconFlowModels(
+		credentials: INodeCredentials,
+		additionalData: IWorkflowExecuteAdditionalData,
+	): Promise<INodePropertyOptions[]> {
+		return await this.nodeParametersService.getOptionsViaLoadOptions(
+			{
+				// From SiliconFlow node
+				routing: {
+					request: {
+						method: 'GET',
+						url: '/v1/models',
+					},
+					output: {
+						postReceive: [
+							{
+								type: 'rootProperty',
+								properties: {
+									property: 'data',
+								},
+							},
+							{
+								type: 'setKeyValue',
+								properties: {
+									name: '={{$responseItem.id}}',
+									value: '={{$responseItem.id}}',
+								},
+							},
+							{
+								type: 'sort',
+								properties: {
+									key: 'name',
+								},
+							},
+						],
+					},
+				},
+			},
+			additionalData,
+			PROVIDER_NODE_TYPE_MAP.siliconFlow,
 			{},
 			credentials,
 		);
