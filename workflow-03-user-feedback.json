@@ -1,0 +1,187 @@
+{
+  "name": "用户反馈处理工作流",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "resume-feedback",
+        "options": {}
+      },
+      "id": "webhook-feedback",
+      "name": "用户反馈接口",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300],
+      "webhookId": "resume-feedback-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "const feedback = $json.body.feedback || '';\nconst currentResume = $json.body.currentResume || '';\nconst jdAnalysis = $json.body.jdAnalysis || '';\nconst iteration = parseInt($json.body.iteration || '1');\nconst maxIterations = 5;\n\nconst needsRegeneration = feedback && feedback.trim() !== '' && iteration < maxIterations;\n\nreturn {\n  json: {\n    feedback: feedback,\n    currentResume: currentResume,\n    jdAnalysis: jdAnalysis,\n    iteration: iteration,\n    maxIterations: maxIterations,\n    needsRegeneration: needsRegeneration,\n    isFinal: !needsRegeneration || iteration >= maxIterations\n  }\n};"
+      },
+      "id": "code-process-feedback",
+      "name": "处理用户反馈",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.needsRegeneration }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "if-need-regenerate",
+      "name": "检查是否需要重新生成",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=基于用户反馈重新优化简历:\n\n当前简历内容:\n{{ $json.currentResume }}\n\nJD分析结果:\n{{ $json.jdAnalysis }}\n\n用户反馈:\n{{ $json.feedback }}\n\n迭代次数: {{ $json.iteration }} / {{ $json.maxIterations }}\n\n请根据用户反馈重新生成简历,保持专业性和准确性,突出与JD匹配的技能和经验。",
+        "options": {}
+      },
+      "id": "prompt-regenerate",
+      "name": "重新生成提示",
+      "type": "n8n-nodes-base.prompt",
+      "typeVersion": 1,
+      "position": [850, 200]
+    },
+    {
+      "parameters": {
+        "resourceLocator": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "options": {
+          "temperature": 0.5,
+          "maxTokens": 4000
+        }
+      },
+      "id": "openai-regenerate",
+      "name": "重新生成简历",
+      "type": "n8n-nodes-base.openAiChatModel",
+      "typeVersion": 1,
+      "position": [1050, 200],
+      "credentials": {
+        "openAiApi": {
+          "id": "openai-credentials",
+          "name": "OpenAI API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const needsRegeneration = $node[\"检查是否需要重新生成\"].json.needsRegeneration;\nconst iteration = $node[\"处理用户反馈\"].json.iteration;\nconst maxIterations = $node[\"处理用户反馈\"].json.maxIterations;\n\nlet responseData;\n\nif (needsRegeneration) {\n  const optimizedResume = $json.output;\n  responseData = {\n    status: \"success\",\n    message: \"简历重新生成成功\",\n    data: {\n      optimizedResume: optimizedResume,\n      iteration: iteration + 1,\n      maxIterations: maxIterations,\n      sessionId: \"resume-\" + Date.now()\n    }\n  };\n} else {\n  const currentResume = $node[\"处理用户反馈\"].json.currentResume;\n  responseData = {\n    status: \"completed\",\n    message: \"简历优化完成,可以下载\",\n    data: {\n      finalResume: currentResume,\n      iteration: iteration,\n      downloadFormats: [\"pdf\", \"docx\"],\n      downloadUrl: \"/resume-download\",\n      sessionId: \"resume-\" + Date.now()\n    }\n  };\n}\n\nreturn {\n  json: responseData\n};"
+      },
+      "id": "code-prepare-response",
+      "name": "准备响应",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1250, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "webhook-response",
+      "name": "返回响应",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1450, 300]
+    }
+  ],
+  "connections": {
+    "用户反馈接口": {
+      "main": [
+        [
+          {
+            "node": "处理用户反馈",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "处理用户反馈": {
+      "main": [
+        [
+          {
+            "node": "检查是否需要重新生成",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "检查是否需要重新生成": {
+      "main": [
+        [
+          {
+            "node": "重新生成提示",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "准备响应",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "重新生成提示": {
+      "main": [
+        [
+          {
+            "node": "重新生成简历",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "重新生成简历": {
+      "main": [
+        [
+          {
+            "node": "准备响应",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "准备响应": {
+      "main": [
+        [
+          {
+            "node": "返回响应",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 1,
+  "updatedAt": "2026-01-29T00:00:00.000Z",
+  "versionId": "1"
+}

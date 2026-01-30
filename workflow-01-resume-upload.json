@@ -1,0 +1,308 @@
+{
+  "name": "简历上传处理工作流",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "resume-upload",
+        "responseMode": "responseNode",
+        "options": {
+          "binaryPropertyName": "data"
+        }
+      },
+      "id": "6cb53833-875d-498e-a41b-59aceb22c2c4",
+      "name": "简历上传接口",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        416,
+        640
+      ],
+      "webhookId": "resume-upload-webhook"
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "binaryPropertyName": "={{ $json.data[0].binary.data0 }}",
+        "options": {
+          "keepSource": "json"
+        }
+      },
+      "id": "3655940f-e9b6-4cdd-b8fa-9f3c9c75528f",
+      "name": "提取PDF文本",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        1104,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {\n  \"status\": \"success\",\n  \"message\": \"简历处理成功\",\n  \"data\":$json.output\n} }}",
+        "options": {}
+      },
+      "id": "41a18232-a2eb-459a-8c96-12a739184417",
+      "name": "返回处理结果",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1984,
+        640
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nlet fileType = '';\nfor (const item of $input.all()) {\n  item.json.myNewField = 1;\n  if(item.binary){\n  console.log('data',item.binary)\n    fileType = item.binary.data0.fileType\n    \n  }\n}\n\nreturn {fileType,data:$input.all()};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        656,
+        640
+      ],
+      "id": "03809096-115d-47e5-9e3f-940ae76f1e1a",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "jsCode": "const mammoth = require('mammoth');\n\nconst binaryData = $input.item.json.binary.file.data;\nconst buffer = Buffer.from(binaryData, 'base64');\n\nconst result = await mammoth.extractRawText({ buffer });\nconst text = result.value;\n\nreturn {\n  json: {\n    text: text,\n    metadata: {\n      fileName: $input.item.json.binary.file.fileName,\n      fileSize: $input.item.json.binary.file.fileSize,\n      mimeType: $input.item.json.binary.file.mimeType\n    }\n  }\n};"
+      },
+      "id": "7026f588-4c65-4256-9eb9-d2eef1a61eec",
+      "name": "提取DOCX文本",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1104,
+        752
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.fileType }}",
+                    "rightValue": "pdf",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "0770d954-3432-4227-b806-31f8d7a9e7c3"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "pdf"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "88c68da7-75e3-4839-8439-0d9d754691d0",
+                    "leftValue": "={{ $json.fileType }}",
+                    "rightValue": "docx",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "docx"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "none"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        880,
+        656
+      ],
+      "id": "09775dd0-a6d4-474e-9b34-2e9a31c5dcb5",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=你是一名资深HR，你擅长分析简历，提取简历关键内容\n你需要从 {{ $json.text }} 中提取信息，并根据内容分成多个片段，使用chunks对象数组来记录\nFollow the Output Parser provided JSON demo(\n{\n\t\n\t\"chunks\": [\n      {\n        \"company\":\"英飞凌技术有限公司\",\n        \"job\":\"前端开发\",\n        \"timeRange\":\"2022.01-2022.10\",\n        \"content\":\"从事前端开发工作，使用react技术开发，完成了***任务\"\n      }\n    ]\n}\n) for your reponse and only response JSON objec，直接返回json对象，chunks也是一个json对象，不要转成json字符串返回",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1440,
+        640
+      ],
+      "id": "dca62f22-73ea-44ab-88f0-013ff9ab4340",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatSiliconFlow",
+      "typeVersion": 1,
+      "position": [
+        1408,
+        848
+      ],
+      "id": "2c2b2517-3e3b-43b1-a8f8-b7320787b5c5",
+      "name": "SiliconFlow Chat Model1",
+      "credentials": {
+        "siliconFlowApi": {
+          "id": "pu1ZkiVM5teG8WwA",
+          "name": "SiliconFlow account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nlet output;\nif ($input.first().json.output) {\n  if(typeof $input.first().json.output === 'string'){\n    output = JSON.parse($input.first().json.output)\n  }else{\n    output = $input.first().json.output\n  }\n}\n\nreturn {output};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1792,
+        640
+      ],
+      "id": "ef84e4ff-5e17-41c8-ba0c-34828408b604",
+      "name": "Code in JavaScript1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "简历上传接口": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "提取PDF文本": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "提取DOCX文本": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "提取PDF文本",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "提取DOCX文本",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SiliconFlow Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "返回处理结果",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "ada6ab5a-715e-4278-843d-eabd1dbf2016",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "90698f68b8d3ed294b65a322f0111135c6f4a8650debe6935cc9750e150127ba"
+  },
+  "id": "032ov8-EnrCs0nY3NvkLg",
+  "tags": []
+}

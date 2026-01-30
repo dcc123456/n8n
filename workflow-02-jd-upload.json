@@ -1,0 +1,131 @@
+{
+  "name": "JD上传处理工作流",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "jd-upload",
+        "options": {}
+      },
+      "id": "webhook-jd-upload",
+      "name": "JD上传接口",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300],
+      "webhookId": "jd-upload-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "let jdText = '';\n\nif ($json.body.text) {\n  jdText = $json.body.text;\n} else if ($json.body.file) {\n  const mammoth = require('mammoth');\n  const binaryData = $json.binary.file.data;\n  const buffer = Buffer.from(binaryData, 'base64');\n  const result = await mammoth.extractRawText({ buffer });\n  jdText = result.value;\n} else {\n  jdText = JSON.stringify($json.body);\n}\n\nreturn {\n  json: {\n    jdText: jdText,\n    sessionId: 'jd-' + Date.now()\n  }\n};"
+      },
+      "id": "code-extract-jd",
+      "name": "提取JD文本",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=分析以下职位描述(JD),提取关键信息:\n\nJD内容:\n{{ $json.jdText }}\n\n请提取并返回以下信息(JSON格式):\n{\n  \"keySkills\": [\"技能1\", \"技能2\", ...],\n  \"experienceRequirements\": \"经验要求描述\",\n  \"educationRequirements\": \"学历要求\",\n  \"jobResponsibilities\": [\"职责1\", \"职责2\", ...],\n  \"preferredQualifications\": [\"优先条件1\", ...]\n}",
+        "options": {}
+      },
+      "id": "prompt-analyze-jd",
+      "name": "JD分析提示",
+      "type": "n8n-nodes-base.prompt",
+      "typeVersion": 1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "resourceLocator": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "options": {
+          "temperature": 0.3,
+          "maxTokens": 2000
+        }
+      },
+      "id": "openai-analyze-jd",
+      "name": "分析JD要求",
+      "type": "n8n-nodes-base.openAiChatModel",
+      "typeVersion": 1,
+      "position": [850, 300],
+      "credentials": {
+        "openAiApi": {
+          "id": "openai-credentials",
+          "name": "OpenAI API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {\n  \"status\": \"success\",\n  \"message\": \"JD分析成功\",\n  \"data\": {\n    \"sessionId\": $node[\"提取JD文本\"].json.sessionId,\n    \"jdAnalysis\": $json.output,\n    \"jdText\": $node[\"提取JD文本\"].json.jdText\n  }\n} }}",
+        "options": {}
+      },
+      "id": "webhook-response",
+      "name": "返回分析结果",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1050, 300]
+    }
+  ],
+  "connections": {
+    "JD上传接口": {
+      "main": [
+        [
+          {
+            "node": "提取JD文本",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "提取JD文本": {
+      "main": [
+        [
+          {
+            "node": "JD分析提示",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JD分析提示": {
+      "main": [
+        [
+          {
+            "node": "分析JD要求",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "分析JD要求": {
+      "main": [
+        [
+          {
+            "node": "返回分析结果",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 1,
+  "updatedAt": "2026-01-29T00:00:00.000Z",
+  "versionId": "1"
+}

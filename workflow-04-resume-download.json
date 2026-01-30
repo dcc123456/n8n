@@ -1,0 +1,185 @@
+{
+  "name": "简历下载工作流",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "resume-download",
+        "options": {}
+      },
+      "id": "webhook-download",
+      "name": "下载请求接口",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300],
+      "webhookId": "resume-download-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "const resumeContent = $json.body.finalResume || $json.body.resumeContent;\nconst format = ($json.body.format || 'pdf').toLowerCase();\nconst sessionId = $json.body.sessionId || 'resume-' + Date.now();\n\nreturn {\n  json: {\n    resumeContent: resumeContent,\n    format: format,\n    sessionId: sessionId,\n    timestamp: new Date().toISOString()\n  }\n};"
+      },
+      "id": "code-prepare-download",
+      "name": "准备下载",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.format }}",
+              "operation": "equals",
+              "value2": "pdf"
+            }
+          ]
+        }
+      },
+      "id": "if-format-check",
+      "name": "检查下载格式",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const { PDFDocument, StandardFonts } = require('pdf-lib');\nconst resumeContent = $input.item.json.resumeContent;\nconst sessionId = $input.item.json.sessionId;\n\nconst pdfDoc = await PDFDocument.create();\nconst font = await pdfDoc.embedFont(StandardFonts.Helvetica);\n\nlet page = pdfDoc.addPage();\nconst { width, height } = page.getSize();\nlet y = height - 50;\nconst fontSize = 12;\nconst lineHeight = fontSize * 1.5;\nconst margin = 50;\n\nconst lines = resumeContent.split('\\n');\n\nfor (const line of lines) {\n  if (y < margin) {\n    page = pdfDoc.addPage();\n    y = height - 50;\n  }\n  \n  page.drawText(line, {\n    x: margin,\n    y: y,\n    size: fontSize,\n    font: font\n  });\n  \n  y -= lineHeight;\n}\n\nconst pdfBytes = await pdfDoc.save();\nconst base64 = Buffer.from(pdfBytes).toString('base64');\n\nreturn {\n  json: {\n    format: 'pdf',\n    fileName: `optimized-resume-${sessionId}.pdf`,\n    mimeType: 'application/pdf',\n    data: base64\n  },\n  binary: {\n    file: {\n      data: base64,\n      mimeType: 'application/pdf',\n      fileName: `optimized-resume-${sessionId}.pdf`\n    }\n  }\n};"
+      },
+      "id": "code-generate-pdf",
+      "name": "生成PDF",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [850, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "const { Document, Packer, Paragraph, TextRun, HeadingLevel } = require('docx');\nconst resumeContent = $input.item.json.resumeContent;\nconst sessionId = $input.item.json.sessionId;\n\nconst lines = resumeContent.split('\\n');\nconst children = [];\n\nfor (const line of lines) {\n  if (line.startsWith('#')) {\n    const level = line.match(/^#+/)[0].length;\n    const headingLevel = level === 1 ? HeadingLevel.HEADING_1 : \n                        level === 2 ? HeadingLevel.HEADING_2 : \n                        HeadingLevel.HEADING_3;\n    children.push(new Paragraph({\n      text: line.replace(/^#+\\s*/, ''),\n      heading: headingLevel\n    }));\n  } else if (line.trim()) {\n    children.push(new Paragraph({\n      children: [new TextRun(line)]\n    }));\n  }\n}\n\nconst doc = new Document({\n  sections: [{\n    properties: {},\n    children: children\n  }]\n});\n\nconst buffer = await Packer.toBuffer(doc);\nconst base64 = buffer.toString('base64');\n\nreturn {\n  json: {\n    format: 'docx',\n    fileName: `optimized-resume-${sessionId}.docx`,\n    mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',\n    data: base64\n  },\n  binary: {\n    file: {\n      data: base64,\n      mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',\n      fileName: `optimized-resume-${sessionId}.docx`\n    }\n  }\n};"
+      },
+      "id": "code-generate-docx",
+      "name": "生成DOCX",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [850, 400]
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "={{ $json.fileName }}",
+        "dataPropertyName": "file",
+        "options": {
+          "folderPath": "./output"
+        }
+      },
+      "id": "write-file",
+      "name": "保存文件",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "binary",
+        "responseBody": "={{ $binary.file }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Disposition",
+                "value": "attachment; filename=\"{{ $json.fileName }}\""
+              }
+            ]
+          }
+        }
+      },
+      "id": "webhook-response-download",
+      "name": "返回下载文件",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1250, 300]
+    }
+  ],
+  "connections": {
+    "下载请求接口": {
+      "main": [
+        [
+          {
+            "node": "准备下载",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "准备下载": {
+      "main": [
+        [
+          {
+            "node": "检查下载格式",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "检查下载格式": {
+      "main": [
+        [
+          {
+            "node": "生成PDF",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "生成DOCX",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "生成PDF": {
+      "main": [
+        [
+          {
+            "node": "保存文件",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "生成DOCX": {
+      "main": [
+        [
+          {
+            "node": "保存文件",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "保存文件": {
+      "main": [
+        [
+          {
+            "node": "返回下载文件",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 1,
+  "updatedAt": "2026-01-29T00:00:00.000Z",
+  "versionId": "1"
+}

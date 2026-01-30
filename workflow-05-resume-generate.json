@@ -1,0 +1,169 @@
+{
+  "name": "简历生成工作流",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "resume-generate",
+        "options": {}
+      },
+      "id": "webhook-generate",
+      "name": "简历生成接口",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300],
+      "webhookId": "resume-generate-webhook"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=基于以下JD要求和简历内容,进行智能匹配:\n\nJD要求:\n{{ $json.body.jdAnalysis }}\n\n简历内容(分块):\n{{ $json.body.resumeChunks.map(c => c.content).join(\"\\n---\\n\") }}\n\n请分析:\n1. 简历中哪些经历和技能与JD要求匹配\n2. 哪些内容需要重点突出\n3. 哪些内容可以优化或补充\n\n返回JSON格式:\n{\n  \"matchedExperiences\": [\"匹配的经历1\", ...],\n  \"highlightedSkills\": [\"需要突出的技能1\", ...],\n  \"optimizationSuggestions\": [\"优化建议1\", ...],\n  \"missingElements\": [\"缺少的元素1\", ...]\n}",
+        "options": {}
+      },
+      "id": "prompt-match",
+      "name": "简历匹配提示",
+      "type": "n8n-nodes-base.prompt",
+      "typeVersion": 1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "resourceLocator": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "options": {
+          "temperature": 0.4,
+          "maxTokens": 3000
+        }
+      },
+      "id": "openai-match",
+      "name": "匹配简历内容",
+      "type": "n8n-nodes-base.openAiChatModel",
+      "typeVersion": 1,
+      "position": [650, 300],
+      "credentials": {
+        "openAiApi": {
+          "id": "openai-credentials",
+          "name": "OpenAI API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=基于以下信息生成优化后的简历:\n\nJD要求:\n{{ $json.body.jdAnalysis }}\n\n简历匹配分析:\n{{ $json.output }}\n\n原始简历内容:\n{{ $json.body.resumeText }}\n\n要求:\n1. 保持原有工作经历的真实性\n2. 优化描述方式,突出与JD匹配的技能和经验\n3. 使用专业、简洁的语言\n4. 确保格式清晰、逻辑连贯\n5. 添加针对性的关键词\n\n请返回完整的优化简历内容,包含以下部分:\n- 个人信息\n- 职业总结\n- 工作经历(优化后)\n- 技能清单\n- 教育背景\n\n返回格式:Markdown",
+        "options": {}
+      },
+      "id": "prompt-generate",
+      "name": "简历生成提示",
+      "type": "n8n-nodes-base.prompt",
+      "typeVersion": 1,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "resourceLocator": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "options": {
+          "temperature": 0.5,
+          "maxTokens": 4000
+        }
+      },
+      "id": "openai-generate",
+      "name": "生成优化简历",
+      "type": "n8n-nodes-base.openAiChatModel",
+      "typeVersion": 1,
+      "position": [1050, 300],
+      "credentials": {
+        "openAiApi": {
+          "id": "openai-credentials",
+          "name": "OpenAI API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {\n  \"status\": \"success\",\n  \"message\": \"简历初稿生成成功\",\n  \"data\": {\n    \"optimizedResume\": $json.output,\n    \"matchAnalysis\": $node[\"匹配简历内容\"].json.output,\n    \"iteration\": 1,\n    \"maxIterations\": 5,\n    \"sessionId\": \"resume-\" + Date.now()\n  }\n} }}",
+        "options": {}
+      },
+      "id": "webhook-response",
+      "name": "返回生成结果",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1250, 300]
+    }
+  ],
+  "connections": {
+    "简历生成接口": {
+      "main": [
+        [
+          {
+            "node": "简历匹配提示",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "简历匹配提示": {
+      "main": [
+        [
+          {
+            "node": "匹配简历内容",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "匹配简历内容": {
+      "main": [
+        [
+          {
+            "node": "简历生成提示",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "简历生成提示": {
+      "main": [
+        [
+          {
+            "node": "生成优化简历",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "生成优化简历": {
+      "main": [
+        [
+          {
+            "node": "返回生成结果",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 1,
+  "updatedAt": "2026-01-29T00:00:00.000Z",
+  "versionId": "1"
+}
